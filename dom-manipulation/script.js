@@ -11,6 +11,20 @@ function showRandomQuote() {
   document.getElementById("quoteDisplay").innerText = quotes[randomIndex].text;
 }
 
+// Function to create the add quote form
+function createAddQuoteForm() {
+  const formContainer = document.createElement("div");
+  formContainer.innerHTML = `
+    <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
+    <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
+    <button id="addQuoteButton">Add Quote</button>
+  `;
+  document.body.appendChild(formContainer);
+
+  // Event listener for adding a new quote
+  document.getElementById("addQuoteButton").addEventListener("click", addQuote);
+}
+
 // Function to add a quote
 function addQuote() {
   const quoteText = document.getElementById("newQuoteText").value;
@@ -170,6 +184,7 @@ setInterval(syncQuotes, 60000); // Check every 60 seconds
 
 // Initial setup
 document.addEventListener("DOMContentLoaded", () => {
+  createAddQuoteForm(); // Create the form to add quotes
   populateCategories();
   showRandomQuote();
   syncQuotes(); // Sync quotes on page load
