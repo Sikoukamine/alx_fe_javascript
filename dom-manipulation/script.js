@@ -3,17 +3,20 @@ let quotes = JSON.parse(localStorage.getItem("quotes")) || [];
 // Fetch quotes from server periodically
 const API_URL = 'https://jsonplaceholder.typicode.com/posts'; // Example API
 
-function fetchQuotesFromServer() {
-  fetch(API_URL)
-    .then(response => response.json())
-    .then(data => {
-      const fetchedQuotes = data.map(item => ({
-        text: item.title,
-        category: 'General' // Default category or derive from data
-      }));
-      syncWithServer(fetchedQuotes);
-    })
-    .catch(error => console.error('Error fetching quotes:', error));
+async function fetchQuotesFromServer() {
+  try {
+    const response = await fetch(API_URL);
+    const data = await response.json();
+
+    const fetchedQuotes = data.map(item => ({
+      text: item.title, // Adjust based on your structure
+      category: 'General' // Default category or derive from data if possible
+    }));
+
+    syncWithServer(fetchedQuotes);
+  } catch (error) {
+    console.error('Error fetching quotes:', error);
+  }
 }
 
 // Periodically fetch new quotes (e.g., every 10 seconds)
