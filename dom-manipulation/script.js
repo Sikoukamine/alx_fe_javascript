@@ -39,7 +39,6 @@ function syncWithServer(fetchedQuotes) {
         Click OK to keep the server's version, Cancel to keep local version.`);
         
         if (userChoice) {
-          // Replace local quote with server quote
           const index = mergedQuotes.indexOf(localQuote);
           mergedQuotes[index] = fetchedQuote;
           notifyUser(`Updated "${localQuote.text}" with server's version.`);
@@ -74,7 +73,51 @@ function notifyUser(message) {
   }, 5000); // Remove after 5 seconds
 }
 
-// Other existing functions (e.g., addQuote, showRandomQuote, filterQuotes, etc.) go here...
+// Add new quote
+async function addQuote() {
+  const newQuoteText = document.getElementById("newQuoteText").value;
+  const newQuoteCategory = document.getElementById("newQuoteCategory").value;
+
+  if (!newQuoteText || !newQuoteCategory) {
+    alert("Please fill in both fields.");
+    return;
+  }
+
+  const newQuote = {
+    text: newQuoteText,
+    category: newQuoteCategory
+  };
+
+  // Save the new quote to local storage first
+  quotes.push(newQuote);
+  saveQuotes(); // Your existing function to save quotes to local storage
+
+  // Now, post the new quote to the server
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(newQuote)
+    });
+
+    if (response.ok) {
+      const postedQuote = await response.json();
+      notifyUser(`Quote added successfully: "${postedQuote.title}"`);
+    } else {
+      console.error('Error posting quote:', response.statusText);
+      notifyUser(`Failed to add quote: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Error posting quote:', error);
+    notifyUser(`Failed to add quote: ${error.message}`);
+  }
+
+  // Clear input fields
+  document.getElementById("newQuoteText").value = "";
+  document.getElementById("newQuoteCategory").value = "";
+}
 
 // Fetch quotes on load
 window.onload = function() {
