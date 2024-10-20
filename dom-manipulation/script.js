@@ -13,7 +13,7 @@ async function fetchQuotesFromServer() {
       category: 'General' // Default category or derive from data if possible
     }));
 
-    syncWithServer(fetchedQuotes);
+    syncQuotes(fetchedQuotes); // Call syncQuotes instead of syncWithServer
   } catch (error) {
     console.error('Error fetching quotes:', error);
   }
@@ -23,35 +23,48 @@ async function fetchQuotesFromServer() {
 setInterval(fetchQuotesFromServer, 10000);
 
 // Sync quotes with server data
-function syncWithServer(fetchedQuotes) {
-  const existingQuotes = JSON.parse(localStorage.getItem("quotes")) || [];
-  const mergedQuotes = [...existingQuotes];
+async function syncQuotes(fetchedQuotes) {
+  try {
+    // Fetch quotes from the server
+    const response = await fetch(API_URL);
+    const serverQuotes = await response.json();
 
-  fetchedQuotes.forEach(fetchedQuote => {
-    const exists = existingQuotes.find(quote => quote.text === fetchedQuote.text);
-    if (!exists) {
-      mergedQuotes.push(fetchedQuote);
-    } else {
-      const localQuote = exists;
-      if (localQuote.category !== fetchedQuote.category) {
-        const userChoice = confirm(`Conflict detected for quote: "${localQuote.text}". 
-        Local: "${localQuote.category}", Server: "${fetchedQuote.category}". 
-        Click OK to keep the server's version, Cancel to keep local version.`);
-        
-        if (userChoice) {
-          const index = mergedQuotes.indexOf(localQuote);
-          mergedQuotes[index] = fetchedQuote;
-          notifyUser(`Updated "${localQuote.text}" with server's version.`);
-        } else {
-          notifyUser(`Kept local version of "${localQuote.text}".`);
+    // Assume server quotes have the same structure as local quotes
+    const localQuotes = JSON.parse(localStorage.getItem("quotes")) || [];
+
+    // Merge local and server quotes, handling conflicts
+    serverQuotes.forEach(serverQuote => {
+      const existingQuote = localQuotes.find(localQuote => localQuote.text === serverQuote.title);
+      if (!existingQuote) {
+        // If it doesn't exist locally, add it
+        localQuotes.push({
+          text: serverQuote.title,
+          category: 'General' // Adjust category as needed
+        });
+      } else {
+        // Handle potential conflict
+        if (existingQuote.category !== 'General') {
+          const userChoice = confirm(`Conflict detected for quote: "${existingQuote.text}". 
+          Local: "${existingQuote.category}", Server: "General". 
+          Click OK to keep the server's version, Cancel to keep local version.`);
+          
+          if (userChoice) {
+            existingQuote.category = 'General'; // Update local quote with server's category
+            notifyUser(`Updated "${existingQuote.text}" with server's version.`);
+          } else {
+            notifyUser(`Kept local version of "${existingQuote.text}".`);
+          }
         }
       }
-    }
-  });
+    });
 
-  localStorage.setItem("quotes", JSON.stringify(mergedQuotes));
-  quotes = mergedQuotes;
-  filterQuotes();
+    // Update local storage with the merged quotes
+    localStorage.setItem("quotes", JSON.stringify(localQuotes));
+    quotes = localQuotes; // Update the quotes variable to the new local quotes
+    filterQuotes(); // Update the displayed quotes
+  } catch (error) {
+    console.error('Error syncing quotes:', error);
+  }
 }
 
 // Notify user with a message
