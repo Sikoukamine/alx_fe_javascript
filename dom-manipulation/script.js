@@ -22,10 +22,11 @@ function showRandomQuote() {
   const quoteDisplay = document.getElementById("quoteDisplay");
   quoteDisplay.innerHTML = `<p>"${randomQuote.text}" - <em>${randomQuote.category}</em></p>`;
   
-  sessionStorage.setItem("lastQuote", JSON.stringify(randomQuote)); // Save last shown quote to session storage
+  // Save last viewed quote to session storage
+  sessionStorage.setItem("lastQuote", JSON.stringify(randomQuote));
 }
 
-// Display last quote from session storage if available
+// Display the last viewed quote from session storage if available
 if (sessionStorage.getItem("lastQuote")) {
   const lastQuote = JSON.parse(sessionStorage.getItem("lastQuote"));
   document.getElementById("quoteDisplay").innerHTML = `<p>"${lastQuote.text}" - <em>${lastQuote.category}</em></p>`;
@@ -68,3 +69,12 @@ function importFromJsonFile(event) {
   };
   fileReader.readAsText(event.target.files[0]);
 }
+
+// Add event listener for showing a new random quote
+document.getElementById("newQuote").addEventListener("click", showRandomQuote);
+
+// Add event listener for adding a new quote
+document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
+
+// Add event listener for importing a JSON file
+document.getElementById("importFile").addEventListener("change", importFromJsonFile);
