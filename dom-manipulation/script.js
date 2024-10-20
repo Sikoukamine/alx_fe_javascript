@@ -97,53 +97,55 @@ function notifyUser(message) {
   }, 5000); // Remove after 5 seconds
 }
 
-// Function to sync quotes with the server
-async function syncQuotes() {
+// Function to fetch quotes from the server
+async function fetchQuotesFromServer() {
   try {
     const response = await fetch(API_URL);
     const serverQuotes = await response.json();
-
-    const localQuotes = JSON.parse(localStorage.getItem("quotes")) || [];
-
-    serverQuotes.forEach(serverQuote => {
-      const existingQuote = localQuotes.find(localQuote => localQuote.text === serverQuote.title);
-      if (!existingQuote) {
-        localQuotes.push({
-          text: serverQuote.title,
-          category: 'General' // Adjust category as needed
-        });
-      } else {
-        // Conflict handling
-        if (existingQuote.category !== 'General') {
-          const userChoice = confirm(`Conflict detected for quote: "${existingQuote.text}". 
-          Local: "${existingQuote.category}", Server: "General". 
-          Click OK to keep the server's version, Cancel to keep local version.`);
-          
-          if (userChoice) {
-            existingQuote.category = 'General'; // Update local quote with server's category
-            notifyUser(`Updated "${existingQuote.text}" with server's version.`);
-          } else {
-            notifyUser(`Kept local version of "${existingQuote.text}".`);
-          }
-        }
-      }
-    });
-
-    // Update local storage with the merged quotes
-    localStorage.setItem("quotes", JSON.stringify(localQuotes));
-    quotes = localQuotes; // Update the quotes variable to the new local quotes
-    filterQuotes(); // Update the displayed quotes
-
-    // Notify user about successful sync
-    notifyUser("Quotes synced with server!"); // This line ensures the notification is displayed
+    return serverQuotes.map(q => ({ text: q.title, category: "General" })); // Assuming category can be General
   } catch (error) {
-    console.error('Error syncing quotes:', error);
+    console.error('Error fetching quotes:', error);
+    return [];
   }
 }
+
+// Function to sync quotes with the server
+async function syncQuotes() {
+  const serverQuotes = await fetchQuotesFromServer();
+
+  const localQuotes = JSON.parse(localStorage.getItem("quotes")) || [];
+  
+  serverQuotes.forEach(serverQuote => {
+    const existingQuote = localQuotes.find(localQuote => localQuote.text === serverQuote.text);
+    if (!existingQuote) {
+      localQuotes.push(serverQuote); // Add new quote from server
+      notifyUser(`Added new quote from server: "${serverQuote.text}"`);
+    } else {
+      // Conflict handling
+      const userChoice = confirm(`Conflict detected for quote: "${existingQuote.text}". 
+      Click OK to update to server's version, Cancel to keep local version.`);
+      
+      if (userChoice) {
+        existingQuote.category = serverQuote.category; // Update local quote with server's category
+        notifyUser(`Updated "${existingQuote.text}" with server's version.`);
+      }
+    }
+  });
+
+  // Update local storage with the merged quotes
+  localStorage.setItem("quotes", JSON.stringify(localQuotes));
+  quotes = localQuotes; // Update the quotes variable to the new local quotes
+  filterQuotes(); // Update the displayed quotes
+
+  notifyUser("Quotes synced with server!");
+}
+
+// Periodically check for new quotes from the server
+setInterval(syncQuotes, 60000); // Check every 60 seconds
 
 // Initial setup
 document.addEventListener("DOMContentLoaded", () => {
   populateCategories();
   showRandomQuote();
-  syncQuotes(); // Optional: sync quotes on page load
+  syncQuotes(); // Sync quotes on page load
 });
