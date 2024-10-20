@@ -28,6 +28,9 @@ function addQuote() {
   populateCategories();
   document.getElementById("newQuoteText").value = "";
   document.getElementById("newQuoteCategory").value = "";
+  
+  // Post the new quote to the server
+  postQuoteToServer(newQuote);
 }
 
 // Function to save quotes to local storage
@@ -109,6 +112,28 @@ async function fetchQuotesFromServer() {
   }
 }
 
+// Function to post a new quote to the server
+async function postQuoteToServer(quote) {
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(quote)
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to post quote to the server");
+    }
+    
+    const serverResponse = await response.json();
+    console.log("Quote posted successfully:", serverResponse);
+  } catch (error) {
+    console.error('Error posting quote:', error);
+  }
+}
+
 // Function to sync quotes with the server
 async function syncQuotes() {
   const serverQuotes = await fetchQuotesFromServer();
@@ -116,17 +141,17 @@ async function syncQuotes() {
   const localQuotes = JSON.parse(localStorage.getItem("quotes")) || [];
   
   serverQuotes.forEach(serverQuote => {
-    const existingQuote = localQuotes.find(localQuote => localQuote.text === serverQuote.text);
+    const existingQuote = localQuotes.find(localQuote => localQuote.text === serverQuote.title);
     if (!existingQuote) {
-      localQuotes.push(serverQuote); // Add new quote from server
-      notifyUser(`Added new quote from server: "${serverQuote.text}"`);
+      localQuotes.push({ text: serverQuote.title, category: "General" }); // Add new quote from server
+      notifyUser(`Added new quote from server: "${serverQuote.title}"`);
     } else {
       // Conflict handling
       const userChoice = confirm(`Conflict detected for quote: "${existingQuote.text}". 
       Click OK to update to server's version, Cancel to keep local version.`);
       
       if (userChoice) {
-        existingQuote.category = serverQuote.category; // Update local quote with server's category
+        existingQuote.category = "General"; // Update local quote with server's category
         notifyUser(`Updated "${existingQuote.text}" with server's version.`);
       }
     }
